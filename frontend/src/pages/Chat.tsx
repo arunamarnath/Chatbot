@@ -1,32 +1,120 @@
-import { Avatar, Box, Button, Typography } from "@mui/material";
-import React from "react";
+import { Avatar, Box, Button, IconButton, Typography } from "@mui/material";
+import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import { red } from "@mui/material/colors";
 import ChatItem from "../components/chat/ChatItem";
+import { IoMdSend } from "react-icons/io";
+import { deleteUserChats, getUserChats, sendChatRequest } from "../helpers/api-communicator";
+import toast from "react-hot-toast";
+import { useNavigate } from "react-router-dom";
 
-const chatMessages = [
-        {"role": "user", "content": "Hi there!"},
-        {"role": "assistant", "content": "Hello! How can I assist you today?"},
-        {"role": "user", "content": "I need help with setting up my email."},
-        {"role": "assistant", "content": "Sure, I can help with that. Which email service are you using?"},
-        {"role": "user", "content": "I'm using Gmail."},
-        {"role": "assistant", "content": "Great! Let's start by opening your Gmail account."},
-        {"role": "assistant", "content": "Once you're logged in, go to the settings gear icon in the top right corner."},
-        {"role": "assistant", "content": "From there, select 'See all settings'."},
-        {"role": "assistant", "content": "Now, you can configure your email settings as needed."},
-        {"role": "user", "content": "Thank you for the guidance!"},
-        {"role": "assistant", "content": "You're welcome! If you have any more questions, feel free to ask."},
-        {"role": "user", "content": "How can I improve my productivity at work?"},
-        {"role": "assistant", "content": "There are many ways to boost productivity. One suggestion is to prioritize tasks and break them into manageable chunks."},
-        {"role": "assistant", "content": "Also, consider taking regular breaks to avoid burnout and stay focused."},
-        {"role": "assistant", "content": "Additionally, utilizing productivity tools and techniques such as time blocking or the Pomodoro Technique can be beneficial."},
-        {"role": "user", "content": "Thanks for the tips! I'll give them a try."},
-        {"role": "assistant", "content": "You're welcome! Let me know if you need further assistance."},
-        {"role": "user", "content": "Goodbye for now!"},
-        {"role": "assistant", "content": "Goodbye! Have a great day!"}    
-]
+// const chatMessages = [
+//   { role: "user", content: "Hi there!" },
+//   { role: "assistant", content: "Hello! How can I assist you today?" },
+//   { role: "user", content: "I need help with setting up my email." },
+//   {
+//     role: "assistant",
+//     content: "Sure, I can help with that. Which email service are you using?",
+//   },
+//   { role: "user", content: "I'm using Gmail." },
+//   {
+//     role: "assistant",
+//     content: "Great! Let's start by opening your Gmail account.",
+//   },
+//   {
+//     role: "assistant",
+//     content:
+//       "Once you're logged in, go to the settings gear icon in the top right corner.",
+//   },
+//   { role: "assistant", content: "From there, select 'See all settings'." },
+//   {
+//     role: "assistant",
+//     content: "Now, you can configure your email settings as needed.",
+//   },
+//   { role: "user", content: "Thank you for the guidance!" },
+//   {
+//     role: "assistant",
+//     content:
+//       "You're welcome! If you have any more questions, feel free to ask.",
+//   },
+//   { role: "user", content: "How can I improve my productivity at work?" },
+//   {
+//     role: "assistant",
+//     content:
+//       "There are many ways to boost productivity. One suggestion is to prioritize tasks and break them into manageable chunks.",
+//   },
+//   {
+//     role: "assistant",
+//     content:
+//       "Also, consider taking regular breaks to avoid burnout and stay focused.",
+//   },
+//   {
+//     role: "assistant",
+//     content:
+//       "Additionally, utilizing productivity tools and techniques such as time blocking or the Pomodoro Technique can be beneficial.",
+//   },
+//   { role: "user", content: "Thanks for the tips! I'll give them a try." },
+//   {
+//     role: "assistant",
+//     content: "You're welcome! Let me know if you need further assistance.",
+//   },
+//   { role: "user", content: "Goodbye for now!" },
+//   { role: "assistant", content: "Goodbye! Have a great day!" },
+// ];
+
+type Message = {
+  role: "user" | "assistant";
+  content : string;
+}
 const Chat = () => {
+  const navigate = useNavigate()
+  const inputRef = useRef<HTMLInputElement | null>(null);
   const auth = useAuth();
+  const [chatMessages, setChatMessages] = useState<Message[]>([])
+
+  const handleSubmit = async () => {
+    const content = inputRef.current?.value as string;
+    if (inputRef && inputRef.current){
+      inputRef.current.value = ""
+    }
+    const newMessage: Message = {role: "user", content};
+    setChatMessages ((prev) => [...prev, newMessage]);
+    const chatData = await sendChatRequest(content)
+    setChatMessages([...chatData.chats])
+    console.log(inputRef.current?.value)
+  };
+
+  const handleDeleteChats = async () => {
+    try{
+      toast.loading("Deleting Chats", { id: "deletechats" })
+      await deleteUserChats()
+      setChatMessages([])
+      toast.success("Deleted Chats Successfully", { id: "deletechats" })
+    }catch(err){
+      console.log(err)
+      toast.error("Deleting Chats Failed", { id: "deletechats" })
+    }
+  }
+
+  useLayoutEffect(() => {
+    if(auth?.isLoggedIn && auth.user){
+      toast.loading("Loading Chats", {id: "loadchats"})
+      getUserChats().then((data) => {
+        setChatMessages([...data.chats])
+        toast.success("Successfully Loaded Chats", {id: "loadchats"})
+      }).catch((error) => {
+        console.log(error)
+        toast.error("Loading Failed", {id: "loadchats"})
+      })
+    }
+  }, [auth])
+
+  useEffect(() => {
+    if(!auth?.user){
+      return navigate("/login")
+    }
+  },[auth])
+
   return (
     <Box
       sx={{
@@ -76,6 +164,7 @@ const Chat = () => {
             Education, etc. But avoid sharing personal information
           </Typography>
           <Button
+          onClick={handleDeleteChats}
             sx={{
               my: "auto",
               width: "200px",
@@ -94,10 +183,21 @@ const Chat = () => {
         </Box>
       </Box>
       <Box
-        sx={{ display: "flex", flex: { md: 0.8, sm: 1, xs: 1 }, flexDirection: "column", px: 3 }}
+        sx={{
+          display: "flex",
+          flex: { md: 0.8, sm: 1, xs: 1 },
+          flexDirection: "column",
+          px: 3,
+        }}
       >
         <Typography
-          sx={{ fontSize: "40px", color: "white", mb: 2, mx: "auto", fontWeight: 600 }}
+          sx={{
+            fontSize: "40px",
+            color: "white",
+            mb: 2,
+            mx: "auto",
+            fontWeight: 600,
+          }}
         >
           Model - GPT 3.5 Turbo
         </Typography>
@@ -114,9 +214,42 @@ const Chat = () => {
             overflowY: "auto",
             scrollBehavior: "smooth",
           }}
-        > {chatMessages.map((chat, index) => <ChatItem content={ chat.content } role={ chat.role } key={index} />)} 
+        >
+          {" "}
+          {chatMessages.map((chat, index) => (
+            //@ts-ignore
+            <ChatItem content={chat.content} role={chat.role} key={index} />
+          ))}
         </Box>
-        
+        <div
+          style={{
+            width: "100%",
+            padding: "20px",
+            borderRadius: 8,
+            backgroundColor: "rgb(17,27,39)",
+            display:"flex",
+            margin: "auto",
+
+          }}
+        >
+          {" "}
+          <input
+          ref = {inputRef}
+            type="text"
+            style={{
+              width: "100%",
+              backgroundColor: "transparent",
+              padding: "10px",
+              border: "none",
+              outline: "none",
+              color: "white",
+              fontSize: "20px",
+            }}
+          />
+          <IconButton onClick={handleSubmit} sx={{ ml:"auto", color:"white" }}>
+            <IoMdSend />
+          </IconButton>
+        </div>
       </Box>
     </Box>
   );
