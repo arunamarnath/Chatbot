@@ -9,22 +9,41 @@ import { useNavigate } from "react-router-dom";
 const Signup = () => {
     const auth = useAuth()
     const navigate = useNavigate()
-    const handleSubmit = async (e:React.FormEvent<HTMLFormElement>) => {
+    
+    // const handleSubmit = async (e:React.FormEvent<HTMLFormElement>) => {
+    //     e.preventDefault();
+    //     const formData = new FormData(e.currentTarget)
+    //     const name = formData.get("name") as string
+    //     const email = formData.get("email") as string
+    //     const password = formData.get("password") as string
+    //     console.log(name, email, password)
+    //     try {
+    //         toast.loading("Signing Up", { id: "signup" })
+    //         await auth?.signup(name, email, password)
+    //         toast.success("Signed Up Succeessfully", { id: "signup" })
+    //     } catch (error) {
+    //         console.log(error)
+    //         toast.error("Signing Up Failed", { id: "signup" })
+    //     }
+    // }
+
+    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
-        const formData = new FormData(e.currentTarget)
-        const name = formData.get("name") as string
-        const email = formData.get("email") as string
-        const password = formData.get("password") as string
-        console.log(name, email, password)
+        const formData = new FormData(e.currentTarget);
+        const name = formData.get("name") as string;
+        const email = formData.get("email") as string;
+        const password = formData.get("password") as string;
         try {
-            toast.loading("Signing Up", { id: "signup" })
-            await auth?.signup(name, email, password)
-            toast.success("Signed Up Succeessfully", { id: "signup" })
+          toast.loading("Signing Up", { id: "signup" });
+          await auth?.signup(name, email, password);
+          toast.success("Signed Up Successfully", { id: "signup" });
         } catch (error) {
-            console.log(error)
-            toast.error("Signing Up Failed", { id: "signup" })
+          console.log(error);
+          toast.error("Signing Up Failed", { id: "signup" });
         }
-    }
+      };
+    
+    
 
     useEffect(() => {
         if(auth?.user){

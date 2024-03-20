@@ -23,9 +23,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     useEffect(() => {
         async function checkStatus() {
             const data = await checkAuthStatus()
+           // const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
         if(data) {
             setUser({ email: data.email, name: data.name })
             setIsLoggedIn(true)
+        }else{
+            setIsLoggedIn(false)
         }
         }
         checkStatus()
@@ -40,17 +43,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         }
     };
     const signup = async (name: string, email: string, password: string) => {
-        const data = await signupUser(name, email, password)
-        if(data) {
-            setUser({ email: data.email, name: data.name })
-            setIsLoggedIn(true)
+        const data = await signupUser(name, email, password);
+        if (data) {
+          setUser({ email: data.email, name: data.name });
+          setIsLoggedIn(true);
         }
-     };
+      };
+    
     const logout = async () => {
         await logoutUser()
         setIsLoggedIn(false)
         setUser(null)
-        window.location.reload()
+        // localStorage.removeItem('authToken');
+        // sessionStorage.removeItem('authToken');
         
     };
 

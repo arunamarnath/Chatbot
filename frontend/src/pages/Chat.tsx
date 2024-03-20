@@ -8,60 +8,6 @@ import { deleteUserChats, getUserChats, sendChatRequest } from "../helpers/api-c
 import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
 
-// const chatMessages = [
-//   { role: "user", content: "Hi there!" },
-//   { role: "assistant", content: "Hello! How can I assist you today?" },
-//   { role: "user", content: "I need help with setting up my email." },
-//   {
-//     role: "assistant",
-//     content: "Sure, I can help with that. Which email service are you using?",
-//   },
-//   { role: "user", content: "I'm using Gmail." },
-//   {
-//     role: "assistant",
-//     content: "Great! Let's start by opening your Gmail account.",
-//   },
-//   {
-//     role: "assistant",
-//     content:
-//       "Once you're logged in, go to the settings gear icon in the top right corner.",
-//   },
-//   { role: "assistant", content: "From there, select 'See all settings'." },
-//   {
-//     role: "assistant",
-//     content: "Now, you can configure your email settings as needed.",
-//   },
-//   { role: "user", content: "Thank you for the guidance!" },
-//   {
-//     role: "assistant",
-//     content:
-//       "You're welcome! If you have any more questions, feel free to ask.",
-//   },
-//   { role: "user", content: "How can I improve my productivity at work?" },
-//   {
-//     role: "assistant",
-//     content:
-//       "There are many ways to boost productivity. One suggestion is to prioritize tasks and break them into manageable chunks.",
-//   },
-//   {
-//     role: "assistant",
-//     content:
-//       "Also, consider taking regular breaks to avoid burnout and stay focused.",
-//   },
-//   {
-//     role: "assistant",
-//     content:
-//       "Additionally, utilizing productivity tools and techniques such as time blocking or the Pomodoro Technique can be beneficial.",
-//   },
-//   { role: "user", content: "Thanks for the tips! I'll give them a try." },
-//   {
-//     role: "assistant",
-//     content: "You're welcome! Let me know if you need further assistance.",
-//   },
-//   { role: "user", content: "Goodbye for now!" },
-//   { role: "assistant", content: "Goodbye! Have a great day!" },
-// ];
-
 type Message = {
   role: "user" | "assistant";
   content : string;
@@ -73,16 +19,29 @@ const Chat = () => {
   const [chatMessages, setChatMessages] = useState<Message[]>([])
 
   const handleSubmit = async () => {
-    const content = inputRef.current?.value as string;
-    if (inputRef && inputRef.current){
-      inputRef.current.value = ""
+    try {
+        const content = inputRef.current?.value as string;
+        if (inputRef && inputRef.current) {
+            inputRef.current.value = "";
+        }
+        const newMessage: Message = { role: "user", content };
+        // setChatMessages((prev) => [...prev, newMessage]);
+        setChatMessages((prev) => [...prev, newMessage]);
+        
+        console.log("Sending chat request:", content);
+        
+        const chatData = await sendChatRequest(content);
+        console.log("Chat data received:", chatData); 
+        
+        setChatMessages([...chatData.chats]);
+    } catch (error) {
+        console.error("Error:", error);
     }
-    const newMessage: Message = {role: "user", content};
-    setChatMessages ((prev) => [...prev, newMessage]);
-    const chatData = await sendChatRequest(content)
-    setChatMessages([...chatData.chats])
-    console.log(inputRef.current?.value)
-  };
+};
+
+
+
+
 
   const handleDeleteChats = async () => {
     try{
@@ -97,17 +56,25 @@ const Chat = () => {
   }
 
   useLayoutEffect(() => {
-    if(auth?.isLoggedIn && auth.user){
-      toast.loading("Loading Chats", {id: "loadchats"})
-      getUserChats().then((data) => {
-        setChatMessages([...data.chats])
-        toast.success("Successfully Loaded Chats", {id: "loadchats"})
-      }).catch((error) => {
-        console.log(error)
-        toast.error("Loading Failed", {id: "loadchats"})
-      })
+    if (auth?.isLoggedIn && auth?.user) {
+      toast.loading("Loading Chats", { id: "loadchats" });
+      getUserChats()
+        .then((data) => {
+          console.log("Retrieved data:", data);
+          if (data && Array.isArray(data?.chats)) {
+            setChatMessages([...data?.chats]);
+            toast.success("Successfully Loaded Chats", { id: "loadchats" });
+          } else {
+            throw new Error("Invalid chat data");
+          }
+        })
+        .catch((error) => {
+          console.error("Loading chats failed:", error);
+          toast.error("Loading Failed", { id: "loadchats" });
+        });
     }
-  }, [auth])
+  }, [auth]);
+  
 
   useEffect(() => {
     if(!auth?.user){
@@ -153,7 +120,7 @@ const Chat = () => {
               fontWeight: 700,
             }}
           >
-            {auth?.user?.name[0]}
+             {auth?.user?.name[0]} 
             {/* {auth?.user?.name.split(" ")[1][0]} */}
           </Avatar>
           <Typography sx={{ mx: "auto", fontFamily: "work sans" }}>

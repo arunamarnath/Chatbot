@@ -61,7 +61,7 @@ const ChatItem = ({
   ) : (
     <Box sx={{ display: "flex", p: 2, bgcolor: "#004d56", gap: 2 , my: 2} }>
       <Avatar sx={{ ml: "0", bgcolor: "black", color: "White" }}>
-        {auth?.user?.name[0]}
+        {auth?.user?.name[0]} 
         {/* {auth?.user?.name.split(" ")[1][0]} */}
       </Avatar>
       <Box>
